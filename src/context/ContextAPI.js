@@ -1,63 +1,68 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useReducer } from "react";
 import axios from "axios";
 
-const ContextAPI = React.createContext();
+const CharacterContext = React.createContext();
 
-export function ContextAPIProvider({ children }) {
-  const [characters, setCharacters] = useState([]);
-  // const [charactersDetail, setCharactersDetail] = useState([]);
+const reducer = (state, action) => {
+  const { payload, type } = action;
+  switch (type) {
+    case "GET_CHARACTERS":
+      return {
+        ...state,
+        characters: payload,
+      };
+    case "GET_FILMS":
+      return {
+        ...state,
+        films: payload,
+      };
+    default:
+      return state;
+  }
+};
 
-  useEffect(() => {
-    async function fectchData() {
-      const { data } = await axios.get(`https://swapi.dev/api/people/`);
+const CharacterState = (props) => {
+  const initialState = {
+    characters: [{}],
+    films: [{}],
+  };
 
-      console.log(data.results);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-      if (data.results) {
-        setCharacters(data.results);
-      } else {
-        console.log("SWAPI LIST Not Present ");
-        setCharacters([]);
-      }
+  const getCharacters = async () => {
+    const res = await axios.get("https://swapi.dev/api/people/");
 
-      // const { data } = await axios.get(`https://swapi.dev/api`);
-      // const { swapiJSON } = data;
+    dispatch({
+      type: "GET_CHARACTERS",
+      payload: res.data.results,
+    });
+  };
 
-      // console.log(swapiJSON);
-
-      // if (data) {
-      //   console.log("SWAPI LIST Present " + JSON.stringify(data));
-      //   const swapiList = [data].map((item) => {
-      //     const { people, films, species, vehicles, starships, planets } = item;
-      //     return {
-      //       people: people,
-      //       films: films,
-      //       species: species,
-      //       vehicles: vehicles,
-      //       starships: starships,
-      //       planets: planets,
-      //     };
-      //   });
-      //   setCharactersDetail(swapiList);
-      // } else {
-      //   console.log("SWAPI LIST Not Present " + JSON.stringify(swapiJSON));
-      //   setCharactersDetail([]);
-      // }
-      // setCharactersDetail([]);
-    }
-    fectchData();
-  }, []);
+  const getMovieList = async () => {
+    const res = await axios.get("https://swapi.dev/api/films/");
+    console.log("Movie List " + JSON.stringify(res.data.results));
+    dispatch({
+      type: "GET_FILMS",
+      payload: res.data.results,
+    });
+  };
 
   return (
     <div>
-      <ContextAPI.Provider value={{ characters }}>
-        {children}
-      </ContextAPI.Provider>
+      <CharacterContext.Provider
+        value={{
+          characters: state.characters,
+          films: state.films,
+          getCharacters,
+          getMovieList,
+        }}
+      >
+        {props.children}
+      </CharacterContext.Provider>
     </div>
   );
-}
-
-// make sure use
-export const useGlobalContext = () => {
-  return useContext(ContextAPI);
 };
+
+export { CharacterState };
+
+export default CharacterContext;
